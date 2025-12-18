@@ -1,27 +1,34 @@
-# Base Image: Neko Firefox (Lighter than Chrome for streaming)
+# 1. Base Image: Neko Firefox (Most stable on Cloud)
+# Chrome crashes more often on free tiers due to memory limits.
 FROM m1k1o/neko:firefox
 
 USER root
 
-# 1. Install Networking Tools
+# 2. Install Tools (Basic networking)
 RUN apt-get update && \
     apt-get install -y wget socat && \
     rm -rf /var/lib/apt/lists/*
 
-# 2. Force Screen Size (540p for 600kbps speed)
-ENV NEKO_SCREEN=960x540@20
+# 3. FIX THE CRASH: Use V3 Configs & Safe Resolution
+# The old "NEKO_SCREEN" caused the driver error.
+# We use 1280x720 because it is a standard VESA mode that never fails.
+ENV NEKO_DESKTOP_SCREEN="1280x720@30"
 
-# 3. CRITICAL: Force TCP Mode (Fixes Black Screen on Free Tiers)
-# This tells Neko "Don't use UDP, use the standard web port"
-ENV NEKO_ICELITE=1
-ENV NEKO_EPR=30000-30100
-ENV NEKO_UDPMUX=30000
+# 4. Networking Fixes (For Koyeb Firewall)
+# Force Neko to bind to the port Koyeb expects (8000 or 8080)
+ENV NEKO_SERVER_BIND=":8000"
 
-# 4. Password Protection
-ENV NEKO_PASSWORD=121459
-ENV NEKO_PASSWORD_ADMIN=121459
+# "WebRTC IceLite" - Critical for servers behind firewalls (prevents black screen)
+ENV NEKO_WEBRTC_ICELITE=1
 
-# 5. Bind to the correct port (Render/Koyeb usually use 8080 or 8000)
-ENV NEKO_BIND=:8080
+# Define a small port range for audio/video to help it tunnel
+ENV NEKO_WEBRTC_EPR="59000-59100"
+ENV NEKO_WEBRTC_UDPMUX=59000
 
-EXPOSE 8080
+# 5. Passwords (V3 Format)
+ENV NEKO_MEMBER_PROVIDER="multiuser"
+ENV NEKO_MEMBER_MULTIUSER_USER_PASSWORD="121459"
+ENV NEKO_MEMBER_MULTIUSER_ADMIN_PASSWORD="121459"
+
+# 6. Expose the Port
+EXPOSE 8000
